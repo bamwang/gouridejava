@@ -1,26 +1,18 @@
 package sokoban.Models;
-import java.util.ArrayList;
 
 public class Field {
-	private ArrayList<Goal> goals;
-	private char field[][];
-	public void init(char[][] map, ArrayList<Goal> goals){
-		/**
-		 * @param map[][] 地図の
-		 * 
-		 * 
-		 * 
-		 * **/
-		this.field = map.clone();
-		this.goals = goals;
+	private int limit;
+	private ArrayList2D<Character> data;
+	public void init(ArrayList2D<Character> map){
+		data = map;
 	}
-	public char[][] getField(){
-		return field;
+	@SuppressWarnings("unchecked")
+	public ArrayList2D<Character> getClonedField(){
+		return (ArrayList2D<Character>) data.clone();
 	}
-	public char getField(int x, int y){
-		return field[x][y];
-	}
-	public ArrayList<Goal> getGoals(){
-		return goals;
+	public Character getField(int x, int y){
+		char a = data.get(x, y);
+//		System.out.println(a);
+		return a;
 	}
 }

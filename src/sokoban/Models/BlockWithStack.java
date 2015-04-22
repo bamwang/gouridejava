@@ -2,11 +2,9 @@ package sokoban.Models;
 
 import java.util.Stack;
 
-import sokoban.Constants;
-
-public abstract class Block {
+public class BlockWithStack extends Block{
 	protected Stack<Position> positions = new Stack<Position>();
-	public Block(){
+	public BlockWithStack(){
 	}
 	public Position getCurrentPosition(){
 		return positions.peek();
