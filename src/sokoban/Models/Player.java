@@ -5,7 +5,10 @@ import sokoban.Constants;
 
 public class Player extends Block  {
 	public void init(int x, int y) {
-		PlayerPosition position = new PlayerPosition(x, y, 0, null);
+		init(x, y, 0);
+	}
+	public void init(int x, int y, int n) {
+		PlayerPosition position = new PlayerPosition(x, y, n, null);
 		positions.push(position);
 	}
 	public int move(int direction, Box box){

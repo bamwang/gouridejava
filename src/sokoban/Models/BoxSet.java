@@ -3,7 +3,7 @@ import java.util.HashMap;
 
 import sokoban.Constants;
 
-public class BoxSet extends BlockSet{
+public class BoxSet extends BlockSet<Box>{
 	GoalSet goals = new GoalSet();
 	int remain = 0;
 //	public void add(Box box) {
@@ -16,7 +16,7 @@ public class BoxSet extends BlockSet{
 		Box box = new Box(x, y, n);
 		super.add(x, y, box);
 	}
-	public HashMap<Integer,Block> getAll(){
+	public HashMap<Integer,Box> getAll(){
 		return blockHash;
 	}
 	public Box get(int x, int y){
@@ -57,7 +57,6 @@ public class BoxSet extends BlockSet{
 		if (afterMove) {
 			remain --;
 		}
-//		System.out.println("remain:" + remain);
 		return remain;
 	}
 	public void addGoal( int x, int y ){
@@ -75,5 +74,8 @@ public class BoxSet extends BlockSet{
 			return true;
 		else
 			return false;
+	}
+	public int getRemain() {
+		return remain;
 	}
 }

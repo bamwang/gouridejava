@@ -1,7 +1,9 @@
 package sokoban.Models;
 
+import sokoban.Constants;
+
 public class Field {
-	private int limit;
+	private int limit = Constants.UNLIMITIED;
 	private ArrayList2D<Character> data;
 	public void init(ArrayList2D<Character> map){
 		data = map;
@@ -14,5 +16,11 @@ public class Field {
 		char a = data.get(x, y);
 //		System.out.println(a);
 		return a;
+	}
+	public void setLimit(int limit) {
+		this.limit = limit;
+	}
+	public int getLimit() {
+		return limit;
 	}
 }

@@ -3,14 +3,15 @@ package sokoban;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map.Entry;
 
 import sokoban.Models.ArrayList2D;
-import sokoban.Models.Block;
 import sokoban.Models.Box;
 import sokoban.Models.BoxSet;
 import sokoban.Models.Field;
@@ -22,18 +23,21 @@ public class Controller {
 	private Field field = model.getField();
 	private BoxSet boxSet = model.getBoxSet();
 	private Player player = model.getPlayer();
+	private final String division = "--------"; 
+	private final String STATUS_FILE = "/tmp/status.dat";
 	// private final int M = 8;
 	// private final int N = 8;
 
 	private final ArrayList<String> presetMap = new ArrayList<String>(
 			Arrays.asList("########", "#      #", "#      #", "# o..o.#",
-					"#    p #", "# o    #", "#      #", "########"));
+					"#    p #", "# o    #", "#      #", "########","<30000"));
 
-	public void setModelsByMapData(ArrayList<String> mapData) {
+	private void setModelsByMapData(ArrayList<String> mapData) {
 		if (mapData == null)
 			mapData = presetMap;
 		ArrayList2D<Character> map = new ArrayList2D<Character>();
 		int height = mapData.size();
+		String limit = null;
 		for (int i = 0; i < height; i++) {
 			int width = mapData.get(i).length();
 			for (int j = 0; j < width; j++) {
@@ -52,21 +56,40 @@ public class Controller {
 					break;
 				case 'o':
 					boxSet.addBox(i, j, 0);
+					break;
+				case '<':
+					limit = mapData.get(i);
+					break;
 				default:
 					break;
 				}
 				// System.out.print(map[i][j]);
 			}
-			// System.out.println();
+			if (limit != null){
+				int limitN = Integer.parseInt(limit.substring(1));
+				try {
+					System.out.println("Do you want to set a limit(" + limitN + ")?");
+					
+					while(true){
+						int userInput = System.in.read();
+						if (userInput == 121) {
+							field.setLimit(limitN);
+							break;
+						}else if( userInput == 110)
+							break;
+					}
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 		}
 		field.init(map);
 	}
 
 	private ArrayList<String> getMapDataFromFile(String fileName) {
 		File file = new File(fileName);
-		try {
-			@SuppressWarnings("resource")
-			BufferedReader br = new BufferedReader(new FileReader(file));
+		try( BufferedReader br = new BufferedReader(new FileReader(file)) ) {
 			ArrayList<String> mapData = new ArrayList<String>();
 			String line = br.readLine();
 			while (line != null) {
@@ -75,24 +98,29 @@ public class Controller {
 			}
 			return mapData;
 		} catch (Exception e) {
+			System.out.println("Cannot open the file, load preset map.");
 			return null;
 		}
 	}
 
-	public void draw() {
+	private void draw() {
 		ArrayList2D<Character> map = (ArrayList2D<Character>) field
 				.getClonedField();
 		Position playerPosition = player.getCurrentPosition();
 		map.set(playerPosition.getX(), playerPosition.getY(), 'P');
-		System.out.println(playerPosition.getX());
-		System.out.println(playerPosition.getY());
 
-		HashMap<Integer, Block> hash = boxSet.getAll();
+		HashMap<Integer, Box> hash = boxSet.getAll();
 
 		hash.forEach((i, block) -> {
 			Box box = (Box) block;
 			map.set(box.getX(), box.getY(), 'o');
 		});
+		int playerN = player.getN();
+		int limit = field.getLimit();
+		if( limit > 0 )
+			System.out.println("Limit:" + playerN + "/" + limit);
+		else
+			System.out.println("Unlimit mode");
 		int width = map.getWidth();
 		int height = map.getWidth();
 		for (int i = 0; i < height; i++) {
@@ -103,7 +131,7 @@ public class Controller {
 		}
 	}
 
-	public boolean move(int direction) {
+	private void move(int direction) {
 		int x = player.getX();
 		int y = player.getY();
 		boolean toMove = false;
@@ -170,51 +198,63 @@ public class Controller {
 		if (toMove) {
 			player.move(direction, toBeMovedBox);
 			if (toBeMovedBox != null) {
-				return boxSet.move(toBeMovedBox, direction) == 0;
+				boxSet.move(toBeMovedBox, direction);
 			}
 		}
-		return false;
 	}
 
-	public void undo() {
+	private void undo() {
 		player.back();
 	}
+	
+	private boolean isGameOver(){
+		return player.getCurrentPosition().getN() == field.getLimit() ;
+	}
+	
+	private boolean isWin(){
+		return boxSet.getRemain() == 0;
+	}
 
-	public void keyListener() {
+	private void keyListener() {
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 		int c = 0;
-		boolean isWin = false;
 		try {
 			while (c != 3) {
 				c = in.read();
 				switch (c) {
 				case 119:
-					isWin = move(Constants.UP);
+					move(Constants.UP);
 					break;
 				case 115:
-					isWin = move(Constants.DOWN);
+					move(Constants.DOWN);
 					break;
 				case 97:
-					isWin = move(Constants.LEFT);
+					move(Constants.LEFT);
 					break;
 				case 100:
-					isWin = move(Constants.RIGHT);
+					move(Constants.RIGHT);
 					break;
 				case 117:
 					undo();
 					break;
+				case 112:
+					exportStatus();
+					break;
 				case 114:
 					reset();
+					init();
 					break;
 				case 10:
 					continue;
 				default:
 					break;
 				}
-				if (isWin){
+				if (isWin()){
 					System.out.println("YOU WIN");
+				}else if (isGameOver()){
+					System.out.println("Limit exceesed");
 				}
-				System.out.println(c);
+//				System.out.println(c);
 				draw();
 			}
 			in.close();
@@ -224,29 +264,117 @@ public class Controller {
 
 	}
 
-	public void reset() {
+	private void reset() {
+		model = null;
 		model = new Model();
 		field = model.getField();
 		boxSet = model.getBoxSet();
 		player = model.getPlayer();
-		init();
+	}
+	
+	private boolean isStatusFound(String fileName) {
+		File file = new File(fileName);
+		return file.exists();
 	}
 
-	public void init() {
-		System.out.println("/Users/a13894/Desktop/test.txt");
+	private void init() {
+		if( isStatusFound(STATUS_FILE) ){
+			try {
+				System.out.println("Found saved status, load?");
+				while(true){
+					int userInput = System.in.read();
+					if (userInput == 121) {
+						importStatus(STATUS_FILE);
+						break;
+					}else if( userInput == 110){
+						loadPreset();
+						break;
+					}
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}else{
+			loadPreset();
+		}
+		draw();
+		keyListener();
+	}
+	private void loadPreset(){
+		System.out.println("Please input filename for map: Ex. /Users/a13894/Desktop/test.txt");
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 		try {
-
 			String fileName = in.readLine();
 			ArrayList<String> mapData = getMapDataFromFile(fileName);
 			setModelsByMapData(mapData);
-			draw();
-			keyListener();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
+	private void exportStatus(){
+		ArrayList2D<Character> fieldData = field.getClonedField();
+		File file = new File(STATUS_FILE);
+		try( FileWriter fw = new FileWriter(file) ) {
+			int width = fieldData.getWidth();
+			int height = fieldData.getHeight();
+			
+			for (int i = 0; i < height; i++) {
+				String temp = "";
+				for (int j = 0; j < width; j++) {
+					temp += fieldData.get(i, j);
+				}
+				if (temp != null) {
+					fw.write(temp + "\n");
+				}
+			}
+			fw.write(division + "\n");
+			fw.write(player.getX() + "\n");
+			fw.write(player.getY() + "\n");
+			fw.write(player.getN() + "\n");
+			fw.write(field.getLimit() + "\n");
+			HashMap<Integer, Box> hash = boxSet.getAll();
+			for (Entry<Integer, Box> entry : hash.entrySet()) {
+			    Box box = entry.getValue();
+			    fw.write(box.getX() + "\n");
+				fw.write(box.getY() + "\n");
+				fw.write(box.getN() + "\n");
+			}
+			fw.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
+	private boolean importStatus(String fileName){
+		File file = new File(fileName);
+		if( !file.exists() )
+			return false;
+		try( FileReader fr = new FileReader(file) ) {
+			BufferedReader br = new BufferedReader(fr);
+			ArrayList<String> field = new ArrayList<String>();
+			String temp = br.readLine();
+			while (!temp.equals(division)) {
+				field.add(temp);
+				temp = br.readLine();
+			}
+			setModelsByMapData(field);
+			player.init(Integer.parseInt(br.readLine()), Integer.parseInt(br.readLine()), Integer.parseInt(br.readLine()));
+			this.field.setLimit(Integer.parseInt(br.readLine()));
+			temp = br.readLine();
+			while (temp!=null) {
+				boxSet.addBox(Integer.parseInt(temp), Integer.parseInt(br.readLine()), Integer.parseInt(br.readLine()));
+				temp = br.readLine();
+			}
+			fr.close();
+			return true;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		}
+	}
 	public static void test() {
 		Controller controller = new Controller();
 		controller.init();

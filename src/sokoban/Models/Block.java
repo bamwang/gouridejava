@@ -2,8 +2,6 @@ package sokoban.Models;
 
 import java.util.Stack;
 
-import sokoban.Constants;
-
 public abstract class Block {
 	protected Stack<Position> positions = new Stack<Position>();
 	public Block(){

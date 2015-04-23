@@ -11,4 +11,5 @@ public class Constants {
 	public static final char WALL = '#';
 	public static final char GOAL = '.';
 	public static final char SPACE = ' ';
+	public static final int UNLIMITIED = -1;
 }
